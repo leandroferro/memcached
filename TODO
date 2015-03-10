@@ -1,0 +1,3 @@
+*** 2016-04-09
+ - Create a Tokenizer from an io.Reader
+ - Update Parser to use Tokenizer
