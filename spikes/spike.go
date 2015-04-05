@@ -193,7 +193,7 @@ func (p *parser) buildStorageCommand(opcode string) bool {
 			} else {
 				c.exptime = exptime
 
-				if nbytes, e := p.readToken(' ', '\r'); e != nil {
+				if nbytes, e := p.readToken(' '); e != nil {
 					log.Println("bsc exptime: ", e)
 					return p.finish()
 				} else {
@@ -201,7 +201,7 @@ func (p *parser) buildStorageCommand(opcode string) bool {
 					log.Println("bsc nbytes: ", c)
 
 					if c.opcode == "cas" {
-						if casunique, e := p.readToken(' ', '\r'); e != nil {
+						if casunique, e := p.readToken(' '); e != nil {
 							log.Println("bsc cas: ", e)
 							return p.finish()
 						} else {
@@ -292,7 +292,7 @@ func (p *parser) buildRetrievalCommand(opcode string) bool {
 func (p *parser) buildDeleteCommand(opcode string) bool {
 	c := &command{opcode: opcode}
 
-	if key, e := p.readToken(' ', '\r'); e != nil {
+	if key, e := p.readToken(' '); e != nil {
 		log.Println("bdc: ", e)
 		return p.finish()
 	} else {
@@ -338,7 +338,7 @@ func (p *parser) buildIncDecCommand(opcode string) bool {
 		c.key = []string{key}
 		log.Println("bic: ", c)
 
-		if value, e := p.readToken(' ', '\r'); e != nil {
+		if value, e := p.readToken(' '); e != nil {
 			log.Println("bic: ", e)
 			return p.finish()
 		} else {
@@ -386,7 +386,7 @@ func (p *parser) buildTouchCommand(opcode string) bool {
 		c.key = []string{key}
 		log.Println("btc: ", c)
 
-		if exptime, e := p.readToken(' ', '\r'); e != nil {
+		if exptime, e := p.readToken(' '); e != nil {
 			log.Println("btc: ", e)
 			return p.finish()
 		} else {
@@ -480,12 +480,12 @@ func NewParser(rd io.Reader) *parser {
 	return p
 }
 
-func oldmain() {
+func main() {
 	log.SetFlags(log.Lmicroseconds)
 	log.Println("main: Starting...")
 	//reader := bufio.NewReader(os.Stdin)
 
-	reader2 := strings.NewReader("set abcde 1 2 3\r\nasd\r\nget abcbbc77&#*#&*8\r\nadd 7188sh 332 1000 10\r\nabc123ert6\r\ngets aaa bbb 234f abababab\r\ncas abc 1 2 3 zxc\r\nvbn\r\nappend a 1 2 3 noreply\r\npoi\r\ndelete kovalsky noreply\r\ndecr oque 23\r\nincr oque 99 noreply\r\ntouch maque 1789828\r\n")
+	reader2 := strings.NewReader("set abcde 1 2 3 \r\nasd\r\nget abcbbc77&#*#&*8\r\nadd 7188sh 332 1000 10 \r\nabc123ert6\r\ngets aaa bbb 234f abababab\r\ncas abc 1 2 3 zxc \r\nvbn\r\nappend a 1 2 3 noreply\r\npoi\r\ndelete kovalsky noreply\r\ndecr oque 23 \r\nincr oque 99 noreply\r\ntouch maque 1789828 \r\n")
 
 	//p := NewParser(reader)
 	p := NewParser(reader2)
@@ -510,7 +510,7 @@ func handleConnection(conn net.Conn) {
 	log.Printf("Stop serving %q\n", conn)
 }
 
-func main() {
+func oldmain() {
 	log.SetFlags(log.Lmicroseconds)
 	log.Println("main: Starting...")
 	ln, err := net.Listen("tcp", ":1234")
