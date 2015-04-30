@@ -9,9 +9,15 @@ import (
 	"log"
 	"net"
 	"strconv"
+	"time"
+)
+
+const (
+	maxOffset = 60 * 60 * 24 * 30
 )
 
 type cacheEntry struct {
+	creation  time.Time
 	flags     int
 	expTime   int
 	dataSize  int
@@ -21,7 +27,7 @@ type cacheEntry struct {
 }
 
 func (entry *cacheEntry) String() string {
-	return fmt.Sprintf("cacheEntry{flags=%d, expTime=%d, dataSize=%d, casUnique=%d, key=%s, data=%q}", entry.flags, entry.expTime, entry.dataSize, entry.casUnique, entry.key, entry.data)
+	return fmt.Sprintf("cacheEntry{creation=%s, flags=%d, expTime=%d, dataSize=%d, casUnique=%d, key=%s, data=%q}", entry.creation, entry.flags, entry.expTime, entry.dataSize, entry.casUnique, entry.key, entry.data)
 }
 
 type Cache interface {
@@ -41,8 +47,25 @@ func (c *simpleCache) Set(entry *cacheEntry) error {
 	return nil
 }
 
-func (c *simpleCache) Get(key string) (*cacheEntry, error) {
-	return c.entries[key], nil
+func (c *simpleCache) Get(key string) (entry *cacheEntry, e error) {
+	now := time.Now()
+	entry = c.entries[key]
+	if entry != nil {
+		var deadline time.Time
+		if entry.expTime <= maxOffset {
+			deadline = entry.creation.Add(time.Duration(entry.expTime) * time.Second)
+		} else {
+			deadline = time.Unix(int64(entry.expTime), 0)
+		}
+
+		log.Println("[simpleCache.Get] now", now, "deadline", deadline)
+
+		if now.After(deadline) {
+			log.Println("[simpleCache.Get] key", key, "expired")
+			entry = nil
+		}
+	}
+	return
 }
 
 func (c *simpleCache) Remove(key string) (entry *cacheEntry, e error) {
@@ -121,7 +144,7 @@ func (c *retrievalCommand) Execute(w io.Writer) {
 func (c *storageCommand) Execute(w io.Writer) {
 	log.Println("[storageCommand.Execute] storing in", c.key)
 
-	entry := &cacheEntry{key: c.key, flags: c.flags, expTime: c.expTime, dataSize: c.dataSize, data: c.data}
+	entry := &cacheEntry{creation: time.Now(), key: c.key, flags: c.flags, expTime: c.expTime, dataSize: c.dataSize, data: c.data}
 	if c.opcode == "set" {
 		entry.casUnique = 1 // TODO use something like hash/crc64
 		if e := cache.Set(entry); e != nil {
